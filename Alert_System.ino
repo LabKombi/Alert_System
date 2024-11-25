@@ -14,16 +14,22 @@ FirebaseData firebaseData;
 FirebaseAuth auth;
 FirebaseConfig config;
 
-#define WIFI_SSID "JTI-3.11"             // Masukkan SSID WiFi Anda
+#define WIFI_SSID "JTI-3.02"             // Masukkan SSID WiFi Anda
 #define WIFI_PASSWORD "" // Masukkan Password WiFi Anda
 #define FIREBASE_HOST "https://drowsines-e2e79-default-rtdb.firebaseio.com/"
 #define FIREBASE_AUTH "NUIz8GXU4AD8qaPqAycd049ex8TTNm0qZ1pYwZ4Y"
+
+// LED and Buzzer setup
+#define LED_SLEEPY D5 // LED untuk status "sleepy"
+#define LED_TIRED D6  // LED untuk status "tired"
+#define BUZZER D7     // Buzzer untuk peringatan
 
 // State variables
 String currentStatus = "";  // Status saat ini
 String previousStatus = ""; // Status sebelumnya
 bool isPlaying = false;     // Apakah sedang memutar
 int currentTrack = 0;       // Track yang sedang dimainkan
+bool warningActive = false; // Apakah peringatan aktif
 
 void setup() {
   // Serial setup
@@ -52,8 +58,16 @@ void setup() {
     Serial.println(F("Unable to begin DFPlayer. Please check connections."));
     while (true); // Hentikan jika DFPlayer tidak terdeteksi
   }
-  myDFPlayer.volume(5); // Set volume awal
+  myDFPlayer.volume(30); // Set volume awal
   Serial.println(F("DFPlayer Mini is ready."));
+
+  // LED and Buzzer setup
+  pinMode(LED_SLEEPY, OUTPUT);
+  pinMode(LED_TIRED, OUTPUT);
+  pinMode(BUZZER, OUTPUT);
+  digitalWrite(LED_SLEEPY, LOW); // Matikan LED awal
+  digitalWrite(LED_TIRED, LOW);  // Matikan LED awal
+  digitalWrite(BUZZER, LOW);     // Matikan Buzzer awal
 }
 
 void loop() {
@@ -82,7 +96,11 @@ void loop() {
     myDFPlayer.play(currentTrack); // Mulai ulang track yang sama
   }
 
-  delay(500); // Interval membaca Firebase
+  if (warningActive) {
+    warningSignal(); // Jalankan sinyal peringatan
+  }
+
+  delay(100); // Interval membaca Firebase
 }
 
 void handleStatusChange() {
@@ -91,17 +109,50 @@ void handleStatusChange() {
     currentTrack = 1;         // Set track 1
     myDFPlayer.play(1);       // Memutar track 1
     isPlaying = true;         // Tandai sedang memutar
+
+    // Aktifkan peringatan
+    warningActive = true;
+
   } else if (currentStatus == "tired") {
     Serial.println(F("Playing track 2..."));
     currentTrack = 2;         // Set track 2
     myDFPlayer.play(2);       // Memutar track 2
     isPlaying = true;         // Tandai sedang memutar
-  } else if (currentStatus == "not sleepy") {
+
+    // Aktifkan peringatan
+    warningActive = true;
+
+  } else if (currentStatus == "not") {
     Serial.println(F("Stopping playback..."));
     myDFPlayer.stop();        // Berhenti memutar
     isPlaying = false;        // Tandai tidak memutar
     currentTrack = 0;         // Reset track
+
+    // Matikan peringatan
+    warningActive = false;
+    digitalWrite(LED_SLEEPY, LOW);
+    digitalWrite(LED_TIRED, LOW);
+    digitalWrite(BUZZER, LOW);
+
   } else {
     Serial.println(F("Unknown status received from Firebase."));
+  }
+}
+
+void warningSignal() {
+  static unsigned long previousMillis = 0;
+  static bool ledState = false;
+  static bool buzzerState = false;
+  unsigned long currentMillis = millis();
+
+  if (currentMillis - previousMillis >= 500) { // Kedip dan bunyi tiap 500 ms
+    previousMillis = currentMillis;
+
+    // Toggle LED dan Buzzer
+    ledState = !ledState;
+    buzzerState = !buzzerState;
+    digitalWrite(LED_SLEEPY, ledState);
+    digitalWrite(LED_TIRED, ledState);
+    digitalWrite(BUZZER, buzzerState);
   }
 }
