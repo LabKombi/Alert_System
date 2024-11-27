@@ -14,8 +14,8 @@ FirebaseData firebaseData;
 FirebaseAuth auth;
 FirebaseConfig config;
 
-#define WIFI_SSID "JTI-3.02"             // Masukkan SSID WiFi Anda
-#define WIFI_PASSWORD "" // Masukkan Password WiFi Anda
+#define WIFI_SSID "Muhyi_Extender"             // Masukkan SSID WiFi Anda
+#define WIFI_PASSWORD "87654321" // Masukkan Password WiFi Anda
 #define FIREBASE_HOST "https://drowsines-e2e79-default-rtdb.firebaseio.com/"
 #define FIREBASE_AUTH "NUIz8GXU4AD8qaPqAycd049ex8TTNm0qZ1pYwZ4Y"
 
@@ -113,7 +113,7 @@ void handleStatusChange() {
     // Aktifkan peringatan
     warningActive = true;
 
-  } else if (currentStatus == "tired") {
+  } else if (currentStatus == "yawn") {
     Serial.println(F("Playing track 2..."));
     currentTrack = 2;         // Set track 2
     myDFPlayer.play(2);       // Memutar track 2
